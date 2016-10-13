@@ -22,10 +22,12 @@ llist_t *merge_list(llist_t *a, llist_t *b)
 {
     llist_t *_list = list_new();
     node_t *current = NULL;
+
     while (a->size && b->size) {
+        int tmp = strcmp(a->head->data, b->head->data);
         llist_t *small = (llist_t *)
-                         ((intptr_t) a * (a->head->data <= b->head->data) +
-                          (intptr_t) b * (a->head->data > b->head->data));
+                         ((intptr_t) a * (tmp <= 0) +
+                          (intptr_t) b * (tmp > 0));
         if (current) {
             current->next = small->head;
             current = current->next;
@@ -72,17 +74,13 @@ void merge(void *data)
         _task->func = NULL;
         tqueue_push(pool->queue, _task);
 
-#if defined (CHECK)
         FILE *fp;
         fp = fopen("output.txt","w");
         while(_list->head) {
-            fprintf(fp,"%ld\n",_list->head->data);
+            fprintf(fp,"%s\n",_list->head->data);
             _list->head = _list->head->next;
         }
         fclose(fp);
-#else
-        list_print(_list);
-#endif
     }
 }
 
@@ -138,34 +136,26 @@ static void *task_run(void *data)
 
 int main(int argc, char const *argv[])
 {
-    if (argc < 3) {
+    if (argc < 2) {
         printf(USAGE);
         return -1;
     }
     thread_count = atoi(argv[1]);
-    data_count = atoi(argv[2]);
+    //data_count = atoi(argv[2]);
+    data_count = 0;
 
     /* Read data */
     the_list = list_new();
 
-#if defined (CHECK)
     FILE *fp;
-    fp = fopen("test_input.txt", "r");
-    for (int i = 0; i < data_count; ++i) {
-        int data;
-        fscanf(fp, "%d", &data);
-        list_add(the_list, data);
+    char word[16];
+    fp = fopen("words_input.txt", "r");
+    while(fgets(word, sizeof(word), fp) != NULL) {
+        word[strlen(word)-1] = '\0';
+        list_add(the_list, word);
+        data_count++;
     }
     fclose(fp);
-
-#else
-    printf("input unsorted data line-by-line\n");
-    for (int i = 0; i < data_count; ++i) {
-        long int data;
-        scanf("%ld", &data);
-        list_add(the_list, data);
-    }
-#endif
 
     /* initialize tasks inside thread pool */
     pthread_mutex_init(&(data_context.mutex), NULL);

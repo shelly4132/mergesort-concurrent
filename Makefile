@@ -20,23 +20,19 @@ deps := $(OBJS:%.o=.%.o.d)
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -MMD -MF .$@.d -c $<
 
-test_input:
-	$(CC) $(CFLAGS) test_input.c -o test_input
-
 sort: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) -rdynamic
 
-check: sort test_input
-	for i in `seq 1 1 500`; do\
-	    ./test_input $$i; \
-	    ./sort 4 $$i; \
-	    sort -n test_input.txt > sorted.txt; \
-	    diff output.txt sorted.txt; \
-	done
-	@echo "Verified OK"
+checker:
+	$(CC) $(CFLAGS) checker.c -o checker
+
+check: sort checker
+	uniq words.txt | sort -R > words_input.txt
+	./sort 4
+	./checker
 
 clean:
-	rm -f $(OBJS) sort test_input output.txt sorted.txt test_input.txt
+	rm -f $(OBJS) sort checker output.txt words_input.txt
 	@rm -rf $(deps)
 
 -include $(deps)
