@@ -15,7 +15,7 @@ struct {
 static llist_t *tmp_list;
 static llist_t *the_list = NULL;
 
-static int thread_count = 0, data_count = 0, max_cut = 0;
+static int thread_count = 0, data_count = 0;
 static tpool_t *pool = NULL;
 
 llist_t *merge_list(llist_t *a, llist_t *b)
@@ -48,19 +48,6 @@ llist_t *merge_list(llist_t *a, llist_t *b)
     return _list;
 }
 
-llist_t *merge_sort(llist_t *list)
-{
-    if (list->size < 2)
-        return list;
-    int mid = list->size / 2;
-    llist_t *left = list;
-    llist_t *right = list_new();
-    right->head = list_nth(list, mid);
-    right->size = list->size - mid;
-    list_nth(list, mid - 1)->next = NULL;
-    left->size = mid;
-    return merge_list(merge_sort(left), merge_sort(right));
-}
 
 void merge(void *data)
 {
@@ -92,9 +79,7 @@ void cut_func(void *data)
 {
     llist_t *list = (llist_t *) data;
     pthread_mutex_lock(&(data_context.mutex));
-    int cut_count = data_context.cut_thread_count;
-    if (list->size > 1 && cut_count < max_cut) {
-        ++data_context.cut_thread_count;
+    if (list->size > 1) {
         pthread_mutex_unlock(&(data_context.mutex));
 
         /* cut list */
@@ -118,7 +103,7 @@ void cut_func(void *data)
         tqueue_push(pool->queue, _task);
     } else {
         pthread_mutex_unlock(&(data_context.mutex));
-        merge(merge_sort(list));
+        merge(list);
     }
 }
 
@@ -148,8 +133,6 @@ int main(int argc, char const *argv[])
     }
     thread_count = atoi(argv[1]);
     data_count = atoi(argv[2]);
-    max_cut = thread_count * (thread_count <= data_count) +
-              data_count * (thread_count > data_count) - 1;
 
     /* Read data */
     the_list = list_new();
