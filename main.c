@@ -71,7 +71,18 @@ void merge(void *data)
         task_t *_task = (task_t *) malloc(sizeof(task_t));
         _task->func = NULL;
         tqueue_push(pool->queue, _task);
+
+#if defined (CHECK)
+        FILE *fp;
+        fp = fopen("output.txt","w");
+        while(_list->head) {
+            fprintf(fp,"%ld\n",_list->head->data);
+            _list->head = _list->head->next;
+        }
+        fclose(fp);
+#else
         list_print(_list);
+#endif
     }
 }
 
@@ -137,15 +148,24 @@ int main(int argc, char const *argv[])
     /* Read data */
     the_list = list_new();
 
-    /* FIXME: remove all all occurrences of printf and scanf
-     * in favor of automated test flow.
-     */
+#if defined (CHECK)
+    FILE *fp;
+    fp = fopen("test_input.txt", "r");
+    for (int i = 0; i < data_count; ++i) {
+        int data;
+        fscanf(fp, "%d", &data);
+        list_add(the_list, data);
+    }
+    fclose(fp);
+
+#else
     printf("input unsorted data line-by-line\n");
     for (int i = 0; i < data_count; ++i) {
         long int data;
         scanf("%ld", &data);
         list_add(the_list, data);
     }
+#endif
 
     /* initialize tasks inside thread pool */
     pthread_mutex_init(&(data_context.mutex), NULL);
